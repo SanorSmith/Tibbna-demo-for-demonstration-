@@ -31,3 +31,21 @@ export function canAccessPath(role: string | null | undefined, pathname: string)
   if (allowed.includes('*')) return true;
   return allowed.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
 }
+
+/**
+ * Where to send someone who landed somewhere they cannot open.
+ *
+ * Derived from the same allowlist rather than a second hand-written mapping —
+ * the "Go to My Module" button used to carry its own, forgot RECEPTION_ADMIN,
+ * and sent them to /dashboard, which that role also cannot open. The button
+ * bounced straight back to the denial page.
+ *
+ * Returns null when the role is unknown or still loading, so callers can wait
+ * rather than guess.
+ */
+export function homePathFor(role: string | null | undefined): string | null {
+  const allowed = allowedPathsFor(role);
+  if (allowed.length === 0) return null;
+  if (allowed.includes('*')) return '/dashboard';
+  return allowed[0];
+}

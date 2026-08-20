@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ShieldX, LogOut, ArrowLeft } from 'lucide-react';
+import { homePathFor } from '@/lib/auth/role-modules';
 
 export default function UnauthorizedPage() {
   const [role, setRole] = useState<string | null>(null);
@@ -19,12 +20,9 @@ export default function UnauthorizedPage() {
     window.location.href = '/login';
   };
 
-  const getHomeRoute = () => {
-    if (role === 'FINANCE_ADMIN') return '/finance';
-    if (role === 'HR_ADMIN') return '/hr';
-    if (role === 'INVENTORY_ADMIN') return '/inventory';
-    return '/dashboard';
-  };
+  // Null while the role is still being fetched, and for a role with no
+  // modules — either way there is nowhere safe to send them yet.
+  const homeRoute = homePathFor(role);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
@@ -44,12 +42,14 @@ export default function UnauthorizedPage() {
         </p>
 
         <div className="flex flex-col gap-3">
-          <a
-            href={getHomeRoute()}
-            className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition"
-          >
-            <ArrowLeft className="w-4 h-4" /> Go to My Module
-          </a>
+          {homeRoute && (
+            <a
+              href={homeRoute}
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition"
+            >
+              <ArrowLeft className="w-4 h-4" /> Go to My Module
+            </a>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm transition"
