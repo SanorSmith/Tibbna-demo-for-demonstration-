@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+// Shared with the sidebar, so what is offered and what is allowed cannot drift.
+import { canAccessPath } from '@/lib/auth/role-modules';
 
-// Role → allowed path prefixes (* means all)
-const ROLE_MODULES: Record<string, string[]> = {
-  SUPER_ADMIN:      ['*'],
-  FINANCE_ADMIN:    ['/finance'],
-  HR_ADMIN:         ['/hr'],
-  INVENTORY_ADMIN:  ['/inventory'],
-  RECEPTION_ADMIN:  ['/reception'],
-};
 
 // Paths that are always public
 const PUBLIC_PATHS = ['/login', '/unauthorized', '/api'];
@@ -51,13 +45,7 @@ export function middleware(request: NextRequest) {
     return res;
   }
 
-  // Super admin — allow everything
-  const allowed = ROLE_MODULES[session.role] ?? [];
-  if (allowed.includes('*')) return NextResponse.next();
-
-  // Check if current path is within allowed modules
-  const hasAccess = allowed.some(prefix => pathname.startsWith(prefix));
-  if (!hasAccess) {
+  if (!canAccessPath(session.role, pathname)) {
     return NextResponse.redirect(new URL('/unauthorized', request.url));
   }
 

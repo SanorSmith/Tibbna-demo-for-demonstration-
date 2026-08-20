@@ -42,6 +42,8 @@ import {
   PackageSearch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { canAccessPath } from '@/lib/auth/role-modules';
 
 const moduleLinks = [
   {
@@ -123,6 +125,22 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const role = user?.role;
+
+  // Only offer what this role can actually open. The middleware refuses the
+  // rest, so showing them made the app look like it granted access it then
+  // denied on click. Child links are filtered too — a module can point at a
+  // path outside its own prefix.
+  const visibleModules = moduleLinks
+    .filter((link) => canAccessPath(role, link.href))
+    .map((link) =>
+      'children' in link && link.children
+        ? { ...link, children: link.children.filter((c) => canAccessPath(role, c.href)) }
+        : link
+    );
+  const visibleExisting = existingLinks.filter((link) => canAccessPath(role, link.href));
+  const canSeeDashboard = canAccessPath(role, '/dashboard');
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -144,6 +162,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
   const SidebarNav = () => (
     <div className="flex-1 overflow-y-auto py-3 sm:py-4">
+      {canSeeDashboard && (
       <Link
         href="/dashboard"
         className={cn(
@@ -157,6 +176,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <LayoutDashboard className="w-[18px] h-[18px] sm:w-5 sm:h-5 flex-shrink-0" />
         <span className="text-sm sm:text-base">Dashboard</span>
       </Link>
+      )}
 
       <div className="px-4 mt-5 mb-1.5 sm:mt-6 sm:mb-2">
         <h3 className="text-[11px] sm:text-xs font-semibold text-[#a3a3a3] uppercase tracking-wider">
@@ -165,7 +185,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       </div>
 
       <nav className="space-y-0.5 px-2">
-        {moduleLinks.map((link) => {
+        {visibleModules.map((link) => {
           const Icon = link.icon;
           const isActive = pathname.startsWith(link.href);
           const hasChildren = 'children' in link && link.children;
@@ -245,7 +265,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       </div>
 
       <nav className="space-y-0.5 px-2">
-        {existingLinks.map((link) => {
+        {visibleExisting.map((link) => {
           const Icon = link.icon;
           const isActive = pathname.startsWith(link.href);
           return (
